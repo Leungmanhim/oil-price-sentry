@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>油站价哨 · 加油站优惠价格智能监控平台</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">油</div>
+    <div class="brand-text">
+      <strong>油站价哨</strong>
+      <span>加油站价格监控平台</span>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nav-item active" data-page="dashboard"><span class="nav-icon">总</span>价格总览</button>
+    <button class="nav-item" data-page="stations"><span class="nav-icon">站</span>加油站管理</button>
+    <button class="nav-item" data-page="prices"><span class="nav-icon">价</span>价格录入 / 导入</button>
+    <button class="nav-item" data-page="ai"><span class="nav-icon ai">AI</span>AI 智能中心<span class="nav-badge" id="nav-badge">0</span></button>
+    <button class="nav-item" data-page="settings"><span class="nav-icon">设</span>设置</button>
+  </nav>
+  <div class="side-widget">
+    <div class="side-widget-title">今日概览</div>
+    <div class="side-row"><span>价格预警</span><b id="side-alerts">0</b></div>
+    <div class="side-row"><span>最低价保持率</span><b id="side-rate">0%</b></div>
+    <div class="side-row"><span>当前时间</span><b id="side-clock">--:--:--</b></div>
+  </div>
+  <div class="sidebar-foot">
+    数据仅存储在本地浏览器<br>演示版 v1.0
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1 id="page-title">价格总览</h1>
+      <p class="subtitle" id="page-subtitle">实时掌握合作加油站在各平台的优惠价格与排名</p>
+    </div>
+    <div class="topbar-right">
+      <span class="demo-badge" title="当前页面使用本地生成的模拟数据，非真实平台报价">DEMO 演示数据</span>
+      <span class="date-chip" id="today-chip"></span>
+      <button class="btn ghost" id="btn-refresh">刷新数据</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- 价格总览 -->
+    <section class="page active" id="page-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <span class="kpi-label">合作加油站</span>
+          <strong id="kpi-stations">0</strong>
+          <span class="kpi-foot">覆盖 <b id="kpi-platforms">0</b> 个合作平台 · <b id="kpi-merchants">0</b> 家服务商</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">价格记录</span>
+          <strong id="kpi-records">0</strong>
+          <span class="kpi-foot">今日更新 <b id="kpi-today">0</b> 条</span>
+        </div>
+        <div class="kpi danger">
+          <span class="kpi-label">价格预警</span>
+          <strong id="kpi-alerts">0</strong>
+          <span class="kpi-foot">竞品低价抢占我方位置</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">最低价保持率</span>
+          <strong id="kpi-rank">0%</strong>
+          <span class="kpi-foot">我方排名第一的价位占比</span>
+        </div>
+      </div>
+
+      <div class="alert-strip" id="alert-strip"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>平台内服务商价格对比</h2>
+            <div class="controls">
+              <select id="compare-platform" class="select compact"></select>
+              <select id="compare-product" class="select compact"></select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table" id="compare-table"></table>
+          </div>
+          <p class="hint">选择合作平台后，对比该平台上各加油站的服务商优惠价。绿色为最低价；「差距」为我方价格减去同平台竞品最低价。</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>价格走势 · 近 7 天</h2>
+            <div class="controls">
+              <select id="trend-platform" class="select compact"></select>
+              <select id="trend-station" class="select compact"></select>
+              <select id="trend-product" class="select compact"></select>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="trend-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2 even">
+        <div class="card">
+          <div class="card-head">
+            <h2>各平台竞争态势</h2>
+            <span class="hint-inline">我方保持最低价的组合占比</span>
+          </div>
+          <div id="platform-health" class="platform-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>优先处理建议</h2>
+            <button class="btn ghost small" id="btn-goto-ai">查看全部建议</button>
+          </div>
+          <div id="todo-list" class="todo-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 加油站管理 -->
+    <section class="page" id="page-stations">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <span class="kpi-label">合作中站点</span>
+          <strong id="st-active">0</strong>
+          <span class="kpi-foot">共 <b id="st-total">0</b> 座已录入加油站</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">覆盖区域</span>
+          <strong id="st-areas">0</strong>
+          <span class="kpi-foot">深圳各区分布情况</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">平台覆盖</span>
+          <strong id="st-coverage">0%</strong>
+          <span class="kpi-foot">站点×平台的数据完整度</span>
+        </div>
+        <div class="kpi danger">
+          <span class="kpi-label">暂停合作</span>
+          <strong id="st-paused">0</strong>
+          <span class="kpi-foot">暂不纳入预警统计</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>合作加油站</h2>
+          <div class="controls">
+            <input id="station-search" class="input compact" placeholder="搜索名称 / 区域">
+            <button class="btn primary" id="btn-add-station">新增加油站</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="station-table">
+            <thead>
+              <tr>
+                <th>加油站</th>
+                <th>品牌</th>
+                <th>区域</th>
+                <th>地址</th>
+                <th>合作状态</th>
+                <th>数据覆盖</th>
+                <th class="right">操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 价格录入 / 导入 -->
+    <section class="page" id="page-prices">
+      <div class="grid-2 even">
+        <div class="card">
+          <div class="card-head"><h2>手动录入价格</h2></div>
+          <form id="price-form" class="form-grid">
+            <label>加油站
+              <select id="pf-station" class="select" required></select>
+            </label>
+            <label>油品
+              <select id="pf-product" class="select"></select>
+            </label>
+            <label>平台
+              <select id="pf-platform" class="select"></select>
+            </label>
+            <label>服务商
+              <select id="pf-merchant" class="select"></select>
+            </label>
+            <label>优惠后价格（元/L）
+              <input id="pf-price" class="input" type="number" step="0.01" min="0" placeholder="如 6.92" required>
+            </label>
+            <label>日期
+              <input id="pf-date" class="input" type="date">
+            </label>
+            <label class="form-actions">
+              <span></span>
+              <button class="btn primary" type="submit">保存价格</button>
+            </label>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>批量导入</h2>
+            <button class="btn ghost" id="btn-template">下载 CSV 模板</button>
+          </div>
+          <p class="hint">支持 .csv / .xlsx，列顺序：加油站、油品、平台、服务商、日期、优惠后价格。加油站名称需与系统内一致，油品写成 92# / 95# / 98#，服务商填我方或竞品名称。</p>
+          <div class="import-row">
+            <input type="file" id="file-input" accept=".csv,.xlsx,.xls">
+          </div>
+          <div class="divider">或直接粘贴表格内容</div>
+          <textarea id="paste-area" class="textarea" placeholder="中石化深南大道站,92#,高德地图,小吉加油,2026-11-09,6.92"></textarea>
+          <button class="btn primary" id="btn-import-paste">导入粘贴内容</button>
+          <div id="import-result" class="import-result"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>价格记录</h2>
+          <div class="controls">
+            <span class="hint-inline" id="record-count"></span>
+            <input id="record-search" class="input compact" placeholder="按加油站筛选">
+          </div>
+        </div>
+        <div class="table-wrap tall">
+          <table class="table" id="record-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>加油站</th>
+                <th>油品</th>
+                <th>平台</th>
+                <th>服务商</th>
+                <th class="num">优惠后价格</th>
+                <th>来源</th>
+                <th class="right">操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>调价留痕</h2>
+          <span class="hint-inline" id="log-count"></span>
+        </div>
+        <p class="hint">每次我方服务商价格发生变化都会自动记录，便于复盘调价动作。</p>
+        <div class="table-wrap">
+          <table class="table" id="log-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>加油站 / 油品</th>
+                <th>平台</th>
+                <th class="num">原价</th>
+                <th class="num">新价</th>
+                <th class="num">变动</th>
+                <th>操作人</th>
+                <th>来源</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI 智能中心 -->
+    <section class="page" id="page-ai">
+      <div class="ai-banner">
+        <div>
+          <span class="tag dark">AI 引擎</span>
+          <h2>价格智能决策中心</h2>
+          <p>基于合作平台（哈啰、高德、百度、滴滴）上各服务商的实时优惠价，自动检测竞品低价抢占、生成调价方案与运营日报，辅助运营人员快速决策。</p>
+        </div>
+        <div class="ai-stats">
+          <div><span>实时预警</span><b id="ai-count">0</b></div>
+          <div><span>异常突变</span><b id="ai-surge-count">0</b></div>
+          <div><span>最低价保持率</span><b id="ai-rate">0%</b></div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="warnings">价格预警</button>
+        <button class="tab" data-tab="surges">异常突变</button>
+        <button class="tab" data-tab="advice">调价建议</button>
+        <button class="tab" data-tab="report">自动日报</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-warnings">
+        <div id="warning-list" class="stack"></div>
+      </div>
+
+      <div class="tab-panel" id="tab-surges">
+        <div id="surge-list" class="stack"></div>
+      </div>
+
+      <div class="tab-panel" id="tab-advice">
+        <div class="card">
+          <div class="card-head">
+            <h2>AI 调价建议</h2>
+            <span class="hint-inline">建议价 = 同平台竞品最低价 - 0.02 元，且不低于成本保护线</span>
+          </div>
+          <div class="table-wrap">
+            <table class="table" id="advice-table">
+              <thead>
+                <tr>
+                  <th>加油站 / 油品</th>
+                  <th class="num">我方现价</th>
+                  <th class="num">竞品最低</th>
+                  <th class="num">建议价</th>
+                  <th class="num">单升毛利</th>
+                  <th>建议理由</th>
+                  <th class="right">操作</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-report">
+        <div class="card">
+          <div class="card-head">
+            <h2>运营日报</h2>
+            <button class="btn primary" id="btn-report">生成今日日报</button>
+          </div>
+          <div id="report-body" class="report-body">
+            <div class="empty">
+              <div class="empty-mark">AI</div>
+              <p>点击「生成今日日报」，自动汇总今日价格变动、竞品动态与行动建议。</p>
+            </div>
+          </div>
+          <div class="report-actions">
+            <button class="btn ghost" id="btn-copy-report">复制日报</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="page" id="page-settings">
+      <div class="grid-2 even">
+        <div class="card">
+          <div class="card-head"><h2>预警与决策参数</h2></div>
+          <div class="form-grid">
+            <label>价格预警阈值（元/L）
+              <input id="set-threshold" class="input" type="number" step="0.01" min="0">
+            </label>
+            <label>异常突变阈值（元/L）
+              <input id="set-surge" class="input" type="number" step="0.01" min="0">
+            </label>
+            <label>操作人
+              <input id="set-operator" class="input" placeholder="如 张三">
+            </label>
+            <label class="form-actions">
+              <span class="hint">预警阈值：竞品低多少触发；突变阈值：单日涨跌多少视为异常</span>
+              <button class="btn primary" id="btn-save-settings">保存设置</button>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>平台、服务商与油品</h2></div>
+          <div class="sub-title">合作平台</div>
+          <div id="platform-list" class="chip-list"></div>
+          <div class="inline-add">
+            <input id="new-platform" class="input" placeholder="新增平台名称">
+            <button class="btn" id="btn-add-platform">添加</button>
+          </div>
+          <div class="sub-title">加油服务商（第一项为我方）</div>
+          <div id="merchant-list" class="chip-list"></div>
+          <div class="inline-add">
+            <input id="new-merchant" class="input" placeholder="新增竞品服务商，如 小吉加油">
+            <button class="btn" id="btn-add-merchant">添加</button>
+          </div>
+          <div class="sub-title">油品类型</div>
+          <div id="product-list" class="chip-list"></div>
+          <div class="inline-add">
+            <input id="new-product" class="input" placeholder="新增油品，如 92#">
+            <button class="btn" id="btn-add-product">添加</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>数据管理</h2></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="btn-export-json">导出全部数据（JSON）</button>
+          <button class="btn ghost" id="btn-export-csv">导出价格记录（CSV）</button>
+          <button class="btn danger" id="btn-reset">重置演示数据</button>
+        </div>
+        <p class="hint">演示版数据保存在浏览器 localStorage，清理浏览器缓存会重置。重置后将重新生成 8 座加油站与近 7 天的价格数据。</p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<dialog id="station-dialog" class="dialog">
+  <form id="station-form">
+    <div class="dialog-head">
+      <h3 id="station-dialog-title">新增加油站</h3>
+      <button type="button" class="dialog-close" id="station-dialog-close">×</button>
+    </div>
+    <div class="form-grid">
+      <label>加油站名称
+        <input class="input" id="sf-name" required placeholder="如 中石化深南大道站">
+      </label>
+      <label>品牌
+        <select class="select" id="sf-brand">
+          <option>中石化</option>
+          <option>中石油</option>
+          <option>中海油</option>
+          <option>其他</option>
+        </select>
+      </label>
+      <label>区域
+        <input class="input" id="sf-area" placeholder="如 福田区">
+      </label>
+      <label>地址
+        <input class="input" id="sf-address" placeholder="如 深南大道1006号">
+      </label>
+      <label>合作状态
+        <select class="select" id="sf-status">
+          <option>合作中</option>
+          <option>暂停合作</option>
+        </select>
+      </label>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="station-cancel">取消</button>
+      <button type="submit" class="btn primary">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
